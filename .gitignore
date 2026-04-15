@@ -1,0 +1,8 @@
+.next
+node_modules
+out
+dist
+.env*.local
+data/submissions.json
+public/uploads/*
+!public/uploads/.gitkeep

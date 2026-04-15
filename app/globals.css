@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #000000;
+  color: #ffffff;
+}
+
+.site-bg {
+  position: relative;
+  min-height: 100vh;
+  background:
+    linear-gradient(142deg, transparent 0 16%, rgba(24, 29, 38, 0.68) 16% 27%, transparent 27% 100%),
+    linear-gradient(22deg, transparent 0 34%, rgba(18, 23, 31, 0.72) 34% 46%, transparent 46% 100%),
+    linear-gradient(156deg, rgba(8, 10, 14, 0.98) 0 18%, rgba(17, 21, 29, 0.82) 18% 30%, rgba(5, 7, 10, 0.98) 30% 100%),
+    #000000;
+}
+
+.site-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(165deg, transparent 0 10%, rgba(39, 45, 58, 0.38) 10% 20%, transparent 20% 100%),
+    linear-gradient(31deg, transparent 0 19%, rgba(28, 33, 43, 0.5) 19% 31%, rgba(3, 4, 7, 0.78) 31% 45%, transparent 45% 100%),
+    linear-gradient(116deg, transparent 0 48%, rgba(30, 36, 47, 0.42) 48% 58%, transparent 58% 100%),
+    radial-gradient(circle at 72% 14%, rgba(0, 163, 255, 0.08), transparent 24%),
+    #000000;
+}
+
+.site-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 3px 3px;
+  mix-blend-mode: screen;
+}
+
+::selection {
+  background: rgba(0, 163, 255, 0.35);
+}
+
+@layer components {
+  .glass-card {
+    @apply border border-white/10 bg-white/[0.065] backdrop-blur-xl;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-electric/70 focus:ring-2 focus:ring-electric/20;
+  }
+
+  .label {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-white/55;
+  }
+
+  .primary-button {
+    @apply inline-flex items-center justify-center rounded-lg bg-electric px-5 py-3 text-sm font-bold text-black transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-electric/50;
+  }
+
+  .secondary-button {
+    @apply inline-flex items-center justify-center rounded-lg border border-white/15 px-5 py-3 text-sm font-bold text-white transition hover:border-electric/70 hover:text-electric focus:outline-none focus:ring-2 focus:ring-electric/40;
+  }
+}
