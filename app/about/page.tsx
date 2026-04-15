@@ -14,7 +14,7 @@ export default function AboutPage() {
         <div>
           <SectionHeading
             eyebrow=""
-            title="MUSIX MIND is an A&R studio for future-facing records."
+            title="MUSIX MIND is a South Indian future facing record label."
             body="We search for artists with a point of view, then pair creative instinct with a structured pipeline that keeps every submission visible, searchable, and actionable."
           />
         </div>
