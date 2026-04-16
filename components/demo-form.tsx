@@ -63,6 +63,10 @@ export function DemoForm() {
             ))}
           </select>
         </label>
+        <label className="grid gap-2">
+          <span className="label">Language</span>
+          <input className="field" name="language" required placeholder="English, Tamil, Hindi..." />
+        </label>
         <label className="grid gap-2 md:col-span-2">
           <span className="label">Track Link</span>
           <input

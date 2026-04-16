@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { statuses, updateSubmissionStatus } from "@/lib/submissions";
+import { isSupabaseConfigured, updateSupabaseSubmissionStatus } from "@/lib/supabase";
 import type { SubmissionStatus } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -11,7 +12,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });
   }
 
-  const submission = await updateSubmissionStatus(params.id, body.status);
+  const submission = isSupabaseConfigured()
+    ? await updateSupabaseSubmissionStatus(params.id, body.status)
+    : await updateSubmissionStatus(params.id, body.status);
 
   if (!submission) {
     return NextResponse.json({ error: "Submission not found." }, { status: 404 });

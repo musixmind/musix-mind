@@ -17,7 +17,12 @@ async function ensureStore() {
 export async function getSubmissions(): Promise<Submission[]> {
   await ensureStore();
   const file = await fs.readFile(dbPath, "utf8");
-  return JSON.parse(file) as Submission[];
+  const submissions = JSON.parse(file) as Submission[];
+  return submissions.map((submission) => ({
+    ...submission,
+    language: submission.language ?? "Unknown",
+    plays: submission.plays ?? 0
+  }));
 }
 
 export async function addSubmission(

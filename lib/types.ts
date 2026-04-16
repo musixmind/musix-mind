@@ -6,6 +6,7 @@ export type Submission = {
   email: string;
   track_title: string;
   genre: string;
+  language: string;
   track_link: string;
   message: string;
   status: SubmissionStatus;
