@@ -15,7 +15,7 @@ export default function AboutPage() {
           <SectionHeading
             eyebrow=""
             title="MUSIX MIND is a South Indian future facing record label."
-            body="We search for artists with a point of view, then pair creative instinct with a structured pipeline that keeps every submission visible, searchable, and actionable."
+            body="At MusixMind, we believe in the transformative power of music. We empower artists to break boundaries, ignite imaginations, and create sounds that resonate with the soul, fostering a community where creativity thrives and dreams become reality."
           />
         </div>
         <div className="glass-card overflow-hidden rounded-lg">
