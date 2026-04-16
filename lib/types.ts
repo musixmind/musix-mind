@@ -20,3 +20,12 @@ export type Artist = {
   image: string;
   highlight: string;
 };
+
+export type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  created_at: string;
+  email_sent: boolean;
+};
