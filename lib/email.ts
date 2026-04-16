@@ -4,10 +4,29 @@ type ContactEmailInput = {
   message: string;
 };
 
+function getSenderEmail() {
+  const fallback = "MUSIX MIND <onboarding@resend.dev>";
+  const configured = process.env.CONTACT_FROM_EMAIL?.trim();
+
+  if (!configured) {
+    return fallback;
+  }
+
+  const unquoted = configured.replace(/^["']|["']$/g, "").trim();
+  const emailOnly = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+  const nameAndEmail = /^.+\s<[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+>$/;
+
+  if (emailOnly.test(unquoted) || nameAndEmail.test(unquoted)) {
+    return unquoted;
+  }
+
+  return fallback;
+}
+
 export async function sendContactEmail(input: ContactEmailInput) {
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.CONTACT_TO_EMAIL ?? "musixmind1@gmail.com";
-  const from = process.env.CONTACT_FROM_EMAIL ?? "MUSIX MIND <onboarding@resend.dev>";
+  const from = getSenderEmail();
 
   if (!apiKey) {
     return {
