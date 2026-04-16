@@ -10,7 +10,10 @@ export async function sendContactEmail(input: ContactEmailInput) {
   const from = process.env.CONTACT_FROM_EMAIL ?? "MUSIX MIND <onboarding@resend.dev>";
 
   if (!apiKey) {
-    return false;
+    return {
+      ok: false,
+      error: "RESEND_API_KEY is not configured in Vercel."
+    };
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -28,5 +31,17 @@ export async function sendContactEmail(input: ContactEmailInput) {
     })
   });
 
-  return response.ok;
+  if (response.ok) {
+    return { ok: true };
+  }
+
+  const payload = (await response.json().catch(() => null)) as {
+    message?: string;
+    error?: string;
+  } | null;
+
+  return {
+    ok: false,
+    error: payload?.message ?? payload?.error ?? "Resend rejected the email request."
+  };
 }

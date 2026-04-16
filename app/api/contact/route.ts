@@ -20,21 +20,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Name, email, and message are required." }, { status: 400 });
     }
 
-    const emailSent = await sendContactEmail({ name, email, message });
-    const contactMessage = await saveContactMessage({
+    const emailResult = await sendContactEmail({ name, email, message });
+
+    if (!emailResult.ok) {
+      return NextResponse.json({ error: emailResult.error }, { status: 502 });
+    }
+
+    await saveContactMessage({
       name,
       email,
       message,
-      email_sent: emailSent
-    });
+      email_sent: true
+    }).catch(() => null);
 
     return NextResponse.json({
-      message: emailSent
-        ? "Message sent successfully."
-        : "Message saved. Email delivery needs RESEND_API_KEY configured.",
-      contactMessage
+      message: "Message sent successfully."
     });
-  } catch {
-    return NextResponse.json({ error: "Unable to send message." }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to send message.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
