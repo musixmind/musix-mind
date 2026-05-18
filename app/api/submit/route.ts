@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendDemoSubmissionEmails } from "@/lib/email";
 import { addSubmission } from "@/lib/submissions";
 import { createSupabaseSubmission, isSupabaseConfigured } from "@/lib/supabase";
 import { saveUpload } from "@/lib/upload";
@@ -31,8 +32,19 @@ export async function POST(request: Request) {
     const submission = isSupabaseConfigured()
       ? await createSupabaseSubmission(submissionPayload)
       : await addSubmission(submissionPayload);
+    const emailResult = await sendDemoSubmissionEmails({
+      ...submissionPayload,
+      submission_id: submission.id,
+      created_at: submission.created_at
+    });
 
-    return NextResponse.json({ submission }, { status: 201 });
+    return NextResponse.json(
+      {
+        submission,
+        notificationError: emailResult.ok ? undefined : emailResult.error
+      },
+      { status: 201 }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to submit demo.";
     return NextResponse.json({ error: message }, { status: 500 });

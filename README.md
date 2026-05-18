@@ -46,6 +46,7 @@ Backend:
 - Node.js route handlers under `app/api`
 - Local JSON persistence in `data/submissions.json`
 - File uploads saved to `public/uploads`
+- Resend email notifications for contact and demo submission flows
 
 Database tables for production:
 
@@ -75,11 +76,14 @@ Storage:
 Feature set:
 
 - Demo submission system
+- Artist confirmation email after demo submission
+- Admin email notification with submission details and uploaded file link
 - Admin review dashboard
 - Status updates from `Pending` to `Signed`
 - Upload playback and external link fallback
 - Playback tracking via `/api/submissions/[id]/play`
-- Ready to extend with admin auth, Supabase realtime, email notifications, and artist dashboards
+- Supabase or local JSON persistence for saved submissions
+- Ready to extend with admin auth, Supabase realtime, and artist dashboards
 
 ## 3. Full Code
 
