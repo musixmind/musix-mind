@@ -1,10 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { AudioLines, CheckCircle2, LoaderCircle, UploadCloud } from "lucide-react";
+import { CheckCircle2, LoaderCircle, UploadCloud } from "lucide-react";
 import { genres } from "@/lib/content";
 
 type FormState = "idle" | "submitting" | "success" | "error";
+
+type SelectedFile = {
+  file: File;
+  name: string;
+  size: string;
+};
 
 function formatFileSize(size: number) {
   if (size < 1024 * 1024) {
@@ -14,11 +20,81 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function makeStorageFileName(fileName: string) {
+  const extension = fileName.includes(".") ? fileName.slice(fileName.lastIndexOf(".")) : ".bin";
+  const base = fileName
+    .replace(extension, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+
+  return `${base || "demo-file"}-${crypto.randomUUID()}${extension.toLowerCase()}`;
+}
+
+async function uploadFileToSupabaseStorage(
+  file: File,
+  onProgress: (progress: number) => void
+) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const bucket = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET;
+
+  if (!supabaseUrl || !supabaseAnonKey || !bucket) {
+    throw new Error(
+      "Storage is not configured yet. Add NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET."
+    );
+  }
+
+  const objectPath = `demo-uploads/${makeStorageFileName(file.name)}`;
+
+  return new Promise<string>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${supabaseUrl}/storage/v1/object/${bucket}/${objectPath}`);
+    xhr.setRequestHeader("apikey", supabaseAnonKey);
+    xhr.setRequestHeader("Authorization", `Bearer ${supabaseAnonKey}`);
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) {
+        return;
+      }
+
+      const percent = Math.min(95, Math.round((event.loaded / event.total) * 95));
+      onProgress(percent);
+    };
+
+    xhr.onerror = () => {
+      reject(new Error("Upload failed while sending the file to storage."));
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(100);
+        resolve(`${supabaseUrl}/storage/v1/object/public/${bucket}/${objectPath}`);
+        return;
+      }
+
+      try {
+        const payload = JSON.parse(xhr.responseText) as { message?: string; error?: string };
+        reject(new Error(payload.message ?? payload.error ?? "Storage upload failed."));
+      } catch {
+        reject(new Error("Storage upload failed."));
+      }
+    };
+
+    xhr.send(file);
+  });
+}
+
 export function DemoForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<FormState>("idle");
   const [message, setMessage] = useState("");
-  const [selectedFile, setSelectedFile] = useState<{ name: string; size: string } | null>(null);
+  const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -29,6 +105,7 @@ export function DemoForm() {
     }
 
     setSelectedFile({
+      file,
       name: file.name,
       size: formatFileSize(file.size)
     });
@@ -38,26 +115,60 @@ export function DemoForm() {
     event.preventDefault();
     setState("submitting");
     setMessage("");
+    setProgress(0);
+    setProgressLabel(selectedFile ? "Preparing your upload..." : "Sending your demo...");
 
     const formData = new FormData(event.currentTarget);
+    const payload = {
+      artist_name: String(formData.get("artist_name") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      track_title: String(formData.get("track_title") ?? ""),
+      genre: String(formData.get("genre") ?? ""),
+      language: String(formData.get("language") ?? ""),
+      track_link: String(formData.get("track_link") ?? ""),
+      message: String(formData.get("message") ?? ""),
+      upload_url: undefined as string | undefined
+    };
+
+    try {
+      if (selectedFile) {
+        setProgressLabel("Uploading your file to secure storage...");
+        payload.upload_url = await uploadFileToSupabaseStorage(selectedFile.file, setProgress);
+      }
+
+      setProgress((current) => Math.max(current, 96));
+      setProgressLabel("Saving your submission and sending emails...");
+    } catch (error) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "Upload failed. Please try again.");
+      setProgress(0);
+      setProgressLabel("");
+      return;
+    }
+
     const response = await fetch("/api/submit", {
       method: "POST",
-      body: formData
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
 
-    const payload = await response.json();
+    const responsePayload = await response.json();
 
     if (!response.ok) {
       setState("error");
-      setMessage(payload.error ?? "Something went wrong. Try again.");
+      setMessage(responsePayload.error ?? "Something went wrong. Try again.");
+      setProgress(0);
+      setProgressLabel("");
       return;
     }
 
     formRef.current?.reset();
     setSelectedFile(null);
     setState("success");
+    setProgress(100);
+    setProgressLabel("Done");
     setMessage(
-      payload.notificationError
+      responsePayload.notificationError
         ? "Demo saved successfully. Confirmation email is delayed right now, but our A&R team still received your submission."
         : "Demo received. A confirmation email has been sent and our A&R team will review it soon."
     );
@@ -138,19 +249,30 @@ export function DemoForm() {
       </div>
       {state === "submitting" ? (
         <div className="mt-6 rounded-lg border border-electric/20 bg-electric/10 px-4 py-4">
-          <div className="flex items-center gap-3">
-            <LoaderCircle className="h-4 w-4 animate-spin text-electric" />
-            <div>
-              <p className="text-sm font-bold text-white">
-                {selectedFile ? "Uploading your audio and sending the demo..." : "Sending your demo..."}
-              </p>
-              <p className="mt-1 text-xs text-white/55">
-                Please wait a moment and keep this tab open.
-              </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <LoaderCircle className="mt-0.5 h-4 w-4 animate-spin text-electric" />
+              <div>
+                <p className="text-sm font-bold text-white">{progressLabel}</p>
+                <p className="mt-1 text-xs text-white/55">
+                  {selectedFile ? "Fast direct upload is in progress. Keep this tab open." : "Please wait a moment."}
+                </p>
+              </div>
             </div>
+            <span className="rounded-full border border-electric/20 bg-black/25 px-3 py-1 text-xs font-bold text-electric">
+              {progress}%
+            </span>
           </div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full w-2/3 animate-pulse rounded-full bg-electric" />
+            <div
+              className="h-full rounded-full bg-electric transition-[width] duration-300 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="mt-3 flex justify-between text-[11px] uppercase tracking-[0.14em] text-white/40">
+            <span>Upload</span>
+            <span>Store</span>
+            <span>Notify</span>
           </div>
         </div>
       ) : null}

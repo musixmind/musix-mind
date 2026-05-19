@@ -126,51 +126,52 @@ export async function sendDemoSubmissionEmails(input: DemoSubmissionEmailInput) 
     ? `Uploaded audio file: ${uploadUrl}`
     : "Uploaded audio file: No audio file uploaded";
 
-  const artistResult = await sendResendEmail({
-    from,
-    to: input.email,
-    subject: `Demo received: ${input.track_title} | MUSIX MIND`,
-    text: [
-      `Hi ${input.artist_name},`,
-      "",
-      "Your demo has been submitted successfully to MUSIX MIND.",
-      "Our A&R team will review it and contact you if it moves forward.",
-      "",
-      "Submission summary:",
-      `Artist: ${input.artist_name}`,
-      `Track: ${input.track_title}`,
-      `Genre: ${input.genre}`,
-      `Language: ${input.language}`,
-      `Track link: ${input.track_link}`,
-      uploadedFileText,
-      "",
-      "Thank you for submitting your music.",
-      "MUSIX MIND"
-    ].join("\n")
-  });
-
-  const adminResult = await sendResendEmail({
-    from,
-    to: getDemoRecipientEmail(),
-    reply_to: input.email,
-    subject: `New demo submission from ${input.artist_name} | ${input.track_title}`,
-    text: [
-      "A new demo was submitted on musixmind.com.",
-      "",
-      `Submission ID: ${input.submission_id}`,
-      `Submitted at: ${input.created_at}`,
-      `Artist: ${input.artist_name}`,
-      `Artist email: ${input.email}`,
-      `Track title: ${input.track_title}`,
-      `Genre: ${input.genre}`,
-      `Language: ${input.language}`,
-      `Track link: ${input.track_link}`,
-      uploadedFileText,
-      "",
-      "Artist message:",
-      input.message || "No message provided."
-    ].join("\n")
-  });
+  const [artistResult, adminResult] = await Promise.all([
+    sendResendEmail({
+      from,
+      to: input.email,
+      subject: `Demo received: ${input.track_title} | MUSIX MIND`,
+      text: [
+        `Hi ${input.artist_name},`,
+        "",
+        "Your demo has been submitted successfully to MUSIX MIND.",
+        "Our A&R team will review it and contact you if it moves forward.",
+        "",
+        "Submission summary:",
+        `Artist: ${input.artist_name}`,
+        `Track: ${input.track_title}`,
+        `Genre: ${input.genre}`,
+        `Language: ${input.language}`,
+        `Track link: ${input.track_link}`,
+        uploadedFileText,
+        "",
+        "Thank you for submitting your music.",
+        "MUSIX MIND"
+      ].join("\n")
+    }),
+    sendResendEmail({
+      from,
+      to: getDemoRecipientEmail(),
+      reply_to: input.email,
+      subject: `New demo submission from ${input.artist_name} | ${input.track_title}`,
+      text: [
+        "A new demo was submitted on musixmind.com.",
+        "",
+        `Submission ID: ${input.submission_id}`,
+        `Submitted at: ${input.created_at}`,
+        `Artist: ${input.artist_name}`,
+        `Artist email: ${input.email}`,
+        `Track title: ${input.track_title}`,
+        `Genre: ${input.genre}`,
+        `Language: ${input.language}`,
+        `Track link: ${input.track_link}`,
+        uploadedFileText,
+        "",
+        "Artist message:",
+        input.message || "No message provided."
+      ].join("\n")
+    })
+  ]);
 
   const errors = [artistResult, adminResult]
     .filter((result) => !result.ok)
